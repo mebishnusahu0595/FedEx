@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCA Dashboard | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">DCA Portal</div>
+                </div>
+                <a href="{{ url_for('dca_dashboard') }}" class="sidebar-link active">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('dca_cases') }}" class="sidebar-link">
+                    <i class="fas fa-folder-open"></i>
+                    <span>My Cases</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" style="background: var(--gradient-orange);">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ dca_info.name if dca_info else current_user.username }}</div>
+                        <div class="user-role">DCA Agent</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Welcome, {{ dca_info.name if dca_info else current_user.username }}</h1>
+                    <p>Your debt recovery dashboard and assigned cases</p>
+                </div>
+                <a href="{{ url_for('dca_cases') }}" class="btn btn-primary">
+                    <i class="fas fa-folder-open"></i> View All Cases
+                </a>
+            </div>
+
+            <!-- Performance Score -->
+            {% if dca_info %}
+            <div class="card mb-3" style="background: var(--gradient-glow); border-color: var(--fedex-purple);">
+                <div class="card-body">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem;">
+                        <div>
+                            <h3 style="margin-bottom: 0.5rem;">Your Performance Score</h3>
+                            <p style="color: var(--text-secondary); margin: 0;">Keep recovering cases to improve your
+                                score!</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 2rem;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 3.5rem; font-weight: 800; color: var(--fedex-orange);">
+                                    {{ "{:.1f}".format(dca_info.performance_score) }}
+                                </div>
+                                <div style="color: var(--text-muted);">out of 100</div>
+                            </div>
+                            <div style="width: 150px;">
+                                <canvas id="scoreChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-info">
+                            <h4>Total Assigned</h4>
+                            <div class="stat-value">{{ total_cases }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                    </div>
+                    <div class="stat-footer">
+                        <span>All cases assigned to you</span>
+                    </div>
+                </div>
+
+                <div class="stat-card orange">
+                    <div class="stat-header">
+                        <div class="stat-info">
+                            <h4>Active Cases</h4>
+                            <div class="stat-value text-orange">{{ active_cases }}</div>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(255, 102, 0, 0.2);">
+                            <i class="fas fa-clock" style="color: var(--fedex-orange);"></i>
+                        </div>
+                    </div>
+                    <div class="stat-footer">
+                        <span>Pending recovery</span>
+                    </div>
+                </div>
+
+                <div class="stat-card success">
+                    <div class="stat-header">
+                        <div class="stat-info">
+                            <h4>Recovered</h4>
+                            <div class="stat-value text-success">{{ recovered_cases }}</div>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(0, 210, 106, 0.2);">
+                            <i class="fas fa-check-circle" style="color: var(--status-success);"></i>
+                        </div>
+                    </div>
+                    <div class="stat-footer">
+                        <span class="stat-change up"><i class="fas fa-arrow-up"></i></span>
+                        <span>Cases successfully recovered</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-info">
+                            <h4>Amount Recovered</h4>
+                            <div class="stat-value" style="color: var(--status-success);">₹{{
+                                "{:,.0f}".format(recovered_amount) }}</div>
+                        </div>
+                        <div class="stat-icon" style="background: rgba(0, 210, 106, 0.2);">
+                            <i class="fas fa-rupee-sign" style="color: var(--status-success);"></i>
+                        </div>
+                    </div>
+                    <div class="stat-footer">
+                        <span>Total recovered amount</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priority Overview & Urgent Cases -->
+            <div class="charts-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-chart-pie"></i> Cases by Priority</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="priorityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-exclamation-triangle"></i> Urgent Cases (SLA)</h3>
+                        <a href="{{ url_for('dca_cases') }}" class="btn btn-sm btn-outline">View All</a>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        {% if urgent_cases %}
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Case #</th>
+                                        <th>Amount</th>
+                                        <th>Priority</th>
+                                        <th>SLA Due</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for case in urgent_cases %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('dca_view_case', case_id=case.id) }}"
+                                                style="font-weight: 600;">
+                                                {{ case.case_number }}
+                                            </a>
+                                        </td>
+                                        <td style="font-weight: 600; color: var(--fedex-orange);">
+                                            ₹{{ "{:,.0f}".format(case.amount) }}
+                                        </td>
+                                        <td><span class="badge badge-{{ case.priority|lower }}">{{ case.priority
+                                                }}</span></td>
+                                        <td>
+                                            <span class="sla-date" data-date="{{ case.sla_due_date }}">
+                                                {{ case.sla_due_date or '-' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('dca_view_case', case_id=case.id) }}"
+                                                class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i> Update
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state" style="padding: 3rem;">
+                            <div class="empty-state-icon" style="font-size: 2.5rem;">
+                                <i class="fas fa-check-circle" style="color: var(--status-success);"></i>
+                            </div>
+                            <h3>No Urgent Cases</h3>
+                            <p>All cases are within SLA. Great job!</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <a href="{{ url_for('dca_cases') }}?priority=HIGH" class="btn btn-outline"
+                            style="padding: 1.5rem; flex-direction: column; height: auto;">
+                            <i class="fas fa-fire"
+                                style="font-size: 1.5rem; color: var(--priority-high); margin-bottom: 0.5rem;"></i>
+                            <span>High Priority Cases</span>
+                        </a>
+                        <a href="{{ url_for('dca_cases') }}?status=ASSIGNED" class="btn btn-outline"
+                            style="padding: 1.5rem; flex-direction: column; height: auto;">
+                            <i class="fas fa-inbox"
+                                style="font-size: 1.5rem; color: var(--fedex-purple-light); margin-bottom: 0.5rem;"></i>
+                            <span>New Assignments</span>
+                        </a>
+                        <a href="{{ url_for('dca_cases') }}?status=IN_PROGRESS" class="btn btn-outline"
+                            style="padding: 1.5rem; flex-direction: column; height: auto;">
+                            <i class="fas fa-spinner"
+                                style="font-size: 1.5rem; color: var(--fedex-orange); margin-bottom: 0.5rem;"></i>
+                            <span>In Progress</span>
+                        </a>
+                        <a href="{{ url_for('dca_cases') }}?status=PROMISE_TO_PAY" class="btn btn-outline"
+                            style="padding: 1.5rem; flex-direction: column; height: auto;">
+                            <i class="fas fa-handshake"
+                                style="font-size: 1.5rem; color: var(--status-info); margin-bottom: 0.5rem;"></i>
+                            <span>Promise to Pay</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Performance Score Gauge
+        {% if dca_info %}
+        new Chart(document.getElementById('scoreChart'), {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [{{ dca_info.performance_score }}, {{ 100 - dca_info.performance_score }}],
+            backgroundColor: ['#FF6600', 'rgba(255, 255, 255, 0.1)'],
+            borderWidth: 0,
+            cutout: '80%'
+        }]
+            },
+            options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+        }
+        });
+        {% endif %}
+
+        // Priority Chart
+        const priorityData = {{ priority_data | tojson if priority_data else '[]' | safe }};
+        const priorityLabels = priorityData.map(d => d.priority);
+        const priorityCounts = priorityData.map(d => d.count);
+
+        new Chart(document.getElementById('priorityChart'), {
+            type: 'doughnut',
+            data: {
+                labels: priorityLabels.length ? priorityLabels : ['HIGH', 'MEDIUM', 'LOW'],
+                datasets: [{
+                    data: priorityCounts.length ? priorityCounts : [0, 0, 0],
+                    backgroundColor: ['#FF4757', '#FFB800', '#00D26A'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#B8B8D1' }
+                    }
+                }
+            }
+        });
+
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+
+        // Highlight SLA breached dates
+        document.querySelectorAll('.sla-date').forEach(span => {
+            const dateStr = span.dataset.date;
+            if (dateStr) {
+                const slaDate = new Date(dateStr);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (slaDate < today) {
+                    span.style.color = 'var(--status-danger)';
+                    span.style.fontWeight = '600';
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

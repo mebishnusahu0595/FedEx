@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Cases | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Main Menu</div>
+                </div>
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_cases') }}" class="sidebar-link">
+                    <i class="fas fa-folder-open"></i>
+                    <span>All Cases</span>
+                </a>
+                <a href="{{ url_for('add_case') }}" class="sidebar-link">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Case</span>
+                </a>
+                <a href="{{ url_for('upload_cases') }}" class="sidebar-link active">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload CSV</span>
+                </a>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Management</div>
+                </div>
+                <a href="{{ url_for('admin_dcas') }}" class="sidebar-link">
+                    <i class="fas fa-building"></i>
+                    <span>DCA Agencies</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Bulk Upload Cases</h1>
+                    <p>Import multiple cases from a CSV file with AI-powered processing</p>
+                </div>
+                <a href="{{ url_for('admin_cases') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to Cases
+                </a>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <!-- Upload Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-cloud-upload-alt"></i> Upload CSV File</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_cases') }}">
+                            <div class="form-group">
+                                <label class="form-label">Select CSV File *</label>
+                                <div style="border: 2px dashed var(--dark-border); border-radius: var(--radius-md); padding: 3rem 2rem; text-align: center; background: var(--dark-card); cursor: pointer;"
+                                    id="dropZone">
+                                    <i class="fas fa-file-csv"
+                                        style="font-size: 3rem; color: var(--fedex-orange); margin-bottom: 1rem;"></i>
+                                    <p style="margin-bottom: 1rem;">Drag and drop your CSV file here</p>
+                                    <p style="color: var(--text-muted); font-size: 0.9rem;">or</p>
+                                    <input type="file" name="file" id="fileInput" accept=".csv" class="form-control"
+                                        style="display: none;" required>
+                                    <button type="button" class="btn btn-secondary btn-sm"
+                                        onclick="document.getElementById('fileInput').click()">
+                                        <i class="fas fa-folder-open"></i> Browse Files
+                                    </button>
+                                    <p id="fileName"
+                                        style="margin-top: 1rem; color: var(--status-success); font-weight: 500;"></p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-check">
+                                    <input type="checkbox" name="auto_assign" class="form-check-input" checked>
+                                    <span style="margin-left: 0.5rem;">
+                                        <strong>Auto-assign to Best DCA</strong>
+                                        <br>
+                                        <span style="font-size: 0.85rem; color: var(--text-muted);">
+                                            AI will automatically allocate cases to the best performing DCAs
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-upload"></i> Upload & Process
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- CSV Format Guide -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-info-circle"></i> CSV Format Guide</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4 style="margin-bottom: 1rem; color: var(--fedex-orange);">Required Columns</h4>
+                        <table class="table" style="margin-bottom: 2rem;">
+                            <thead>
+                                <tr>
+                                    <th>Column Name</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code
+                                            style="background: var(--dark-card); padding: 0.25rem 0.5rem; border-radius: 4px;">customer_id</code>
+                                    </td>
+                                    <td>Unique customer identifier</td>
+                                </tr>
+                                <tr>
+                                    <td><code
+                                            style="background: var(--dark-card); padding: 0.25rem 0.5rem; border-radius: 4px;">amount</code>
+                                    </td>
+                                    <td>Outstanding amount in ₹</td>
+                                </tr>
+                                <tr>
+                                    <td><code
+                                            style="background: var(--dark-card); padding: 0.25rem 0.5rem; border-radius: 4px;">overdue_days</code>
+                                    </td>
+                                    <td>Number of days overdue</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4 style="margin-bottom: 1rem; color: var(--text-secondary);">Optional Columns</h4>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <td><code
+                                            style="background: var(--dark-card); padding: 0.25rem 0.5rem; border-radius: 4px;">customer_name</code>
+                                    </td>
+                                    <td>Customer full name</td>
+                                </tr>
+                                <tr>
+                                    <td><code
+                                            style="background: var(--dark-card); padding: 0.25rem 0.5rem; border-radius: 4px;">invoice_number</code>
+                                    </td>
+                                    <td>Invoice reference</td>
+                                </tr>
+                                <tr>
+                                    <td><code
+                                            style="background: var(--dark-card); padding: 0.25rem 0.5rem; border-radius: 4px;">region</code>
+                                    </td>
+                                    <td>North/South/East/West/Central</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div
+                            style="margin-top: 2rem; padding: 1rem; background: rgba(77, 20, 140, 0.1); border-radius: var(--radius-md); border-left: 4px solid var(--fedex-purple);">
+                            <h4 style="margin-bottom: 0.5rem; font-size: 0.9rem;">
+                                <i class="fas fa-magic"></i> AI Processing
+                            </h4>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">
+                                For each case, the system will automatically calculate Priority Level,
+                                Recovery Probability, and assign to the best matching DCA.
+                            </p>
+                        </div>
+
+                        <div
+                            style="margin-top: 1.5rem; padding: 1rem; background: var(--dark-card); border-radius: var(--radius-md);">
+                            <h4 style="margin-bottom: 0.5rem; font-size: 0.9rem;">
+                                <i class="fas fa-download"></i> Sample CSV
+                            </h4>
+                            <pre style="font-size: 0.75rem; color: var(--text-secondary); margin: 0; overflow-x: auto;">customer_id,customer_name,amount,overdue_days,region
+CUST-001,John Doe,50000,45,North
+CUST-002,Jane Smith,75000,90,South
+CUST-003,Bob Wilson,25000,30,East</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // File upload handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+
+        fileInput.addEventListener('change', function (e) {
+            if (e.target.files.length > 0) {
+                fileName.textContent = '✓ ' + e.target.files[0].name;
+                dropZone.style.borderColor = 'var(--status-success)';
+            }
+        });
+
+        dropZone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--fedex-orange)';
+            dropZone.style.background = 'rgba(255, 102, 0, 0.1)';
+        });
+
+        dropZone.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--dark-border)';
+            dropZone.style.background = 'var(--dark-card)';
+        });
+
+        dropZone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--status-success)';
+            dropZone.style.background = 'var(--dark-card)';
+
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                fileName.textContent = '✓ ' + e.dataTransfer.files[0].name;
+            }
+        });
+
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>

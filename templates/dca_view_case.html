@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Case | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">DCA Portal</div>
+                </div>
+                <a href="{{ url_for('dca_dashboard') }}" class="sidebar-link">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('dca_cases') }}" class="sidebar-link active">
+                    <i class="fas fa-folder-open"></i>
+                    <span>My Cases</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" style="background: var(--gradient-orange);">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-role">DCA Agent</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Update Case</h1>
+                    <p>Update case status and add recovery notes</p>
+                </div>
+                <a href="{{ url_for('dca_cases') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to Cases
+                </a>
+            </div>
+
+            <!-- Case Header -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="case-header">
+                        <div>
+                            <div class="case-number">{{ case.case_number }}</div>
+                            <div class="case-customer">{{ case.customer_name or case.customer_id }}</div>
+                            <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+                                <span class="badge badge-{{ case.priority|lower }}">{{ case.priority }} Priority</span>
+                                <span class="badge badge-{{ case.status|lower|replace('_', '-') }}">{{ case.status
+                                    }}</span>
+                            </div>
+                        </div>
+                        <div class="case-meta">
+                            <div class="case-meta-item">
+                                <span class="case-meta-label">Amount</span>
+                                <span class="case-meta-value amount">₹{{ "{:,.0f}".format(case.amount) }}</span>
+                            </div>
+                            <div class="case-meta-item">
+                                <span class="case-meta-label">Overdue</span>
+                                <span class="case-meta-value">{{ case.overdue_days }} days</span>
+                            </div>
+                            <div class="case-meta-item">
+                                <span class="case-meta-label">SLA Due</span>
+                                <span class="case-meta-value">{{ case.sla_due_date or 'Not Set' }}</span>
+                            </div>
+                            {% if case.recovery_amount %}
+                            <div class="case-meta-item">
+                                <span class="case-meta-label">Recovered</span>
+                                <span class="case-meta-value" style="color: var(--status-success);">₹{{
+                                    "{:,.0f}".format(case.recovery_amount) }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <!-- Update Status Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-edit"></i> Update Status</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if case.status not in ['RECOVERED', 'CLOSED', 'WRITTEN_OFF'] %}
+                        <form method="POST" action="{{ url_for('dca_view_case', case_id=case.id) }}">
+                            <div class="form-group">
+                                <label class="form-label">New Status *</label>
+                                <select name="status" class="form-control" required id="statusSelect">
+                                    <option value="">Select Status</option>
+                                    <option value="IN_PROGRESS" {% if case.status=='IN_PROGRESS' %}selected{% endif %}>
+                                        In Progress</option>
+                                    <option value="CONTACTED" {% if case.status=='CONTACTED' %}selected{% endif %}>
+                                        Contacted Customer</option>
+                                    <option value="PROMISE_TO_PAY" {% if case.status=='PROMISE_TO_PAY' %}selected{%
+                                        endif %}>Promise to Pay</option>
+                                    <option value="RECOVERED">✓ Recovered</option>
+                                    <option value="FAILED">✗ Failed / Unrecoverable</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="recoveryAmountGroup" style="display: none;">
+                                <label class="form-label">Recovery Amount (₹) *</label>
+                                <input type="number" name="recovery_amount" class="form-control"
+                                    placeholder="Enter recovered amount" max="{{ case.amount }}" step="0.01">
+                                <small style="color: var(--text-muted);">Maximum: ₹{{ "{:,.0f}".format(case.amount)
+                                    }}</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Notes</label>
+                                <textarea name="notes" class="form-control" rows="4"
+                                    placeholder="Add details about your interaction with the customer, payment commitments, etc.">{{ case.notes or '' }}</textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-save"></i> Update Case
+                            </button>
+                        </form>
+                        {% else %}
+                        <div
+                            class="alert {% if case.status == 'RECOVERED' %}alert-success{% else %}alert-info{% endif %}">
+                            <i
+                                class="fas fa-{% if case.status == 'RECOVERED' %}check-circle{% else %}info-circle{% endif %} alert-icon"></i>
+                            <div class="alert-content">
+                                <div class="alert-title">Case {{ case.status.replace('_', ' ').title() }}</div>
+                                <div class="alert-text">
+                                    {% if case.status == 'RECOVERED' %}
+                                    This case has been successfully recovered. Amount: ₹{{
+                                    "{:,.0f}".format(case.recovery_amount or 0) }}
+                                    {% else %}
+                                    This case has been closed and cannot be updated.
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Status Guide -->
+                        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--dark-border);">
+                            <h4 style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">Status Guide
+                            </h4>
+                            <div style="display: grid; gap: 0.75rem;">
+                                <div
+                                    style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                    <span class="badge badge-in-progress">In Progress</span>
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Working on the
+                                        case</span>
+                                </div>
+                                <div
+                                    style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                    <span class="badge badge-contacted">Contacted</span>
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Customer has been
+                                        reached</span>
+                                </div>
+                                <div
+                                    style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                    <span class="badge badge-promise-to-pay">Promise to Pay</span>
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Customer committed to
+                                        pay</span>
+                                </div>
+                                <div
+                                    style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                    <span class="badge badge-recovered">Recovered</span>
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Payment received
+                                        ✓</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Case History -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-history"></i> Case History</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if history %}
+                        <div class="timeline">
+                            {% for log in history %}
+                            <div
+                                class="timeline-item {% if log.action == 'STATUS_UPDATE' and log.new_status == 'RECOVERED' %}success{% elif log.action == 'ESCALATED' %}danger{% elif log.action == 'ASSIGNED' %}warning{% endif %}">
+                                <div class="timeline-date">{{ log.created_at }}</div>
+                                <div class="timeline-title">
+                                    {{ log.action.replace('_', ' ').title() }}
+                                    {% if log.username %}
+                                    <span style="color: var(--text-muted); font-weight: 400;"> by {{ log.username
+                                        }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="timeline-text">
+                                    {% if log.old_status and log.new_status %}
+                                    Status: {{ log.old_status }} → <strong>{{ log.new_status }}</strong>
+                                    {% endif %}
+                                    {% if log.amount %}
+                                    <br>Amount: ₹{{ "{:,.0f}".format(log.amount) }}
+                                    {% endif %}
+                                    {% if log.notes %}
+                                    <br>{{ log.notes }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state" style="padding: 2rem;">
+                            <div class="empty-state-icon" style="font-size: 2rem;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <p>No history recorded yet</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case Details -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-info-circle"></i> Case Details</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">
+                                Customer ID</div>
+                            <div style="font-weight: 500;">{{ case.customer_id }}</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">
+                                Invoice Number</div>
+                            <div style="font-weight: 500;">{{ case.invoice_number or 'N/A' }}</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">
+                                Region</div>
+                            <div style="font-weight: 500;">{{ case.region or 'N/A' }}</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">
+                                Recovery Probability</div>
+                            <div style="font-weight: 500; color: var(--status-success);">{{ (case.recovery_probability *
+                                100)|int }}%</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">
+                                Assigned Date</div>
+                            <div style="font-weight: 500;">{{ case.assigned_at or 'N/A' }}</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">
+                                Created Date</div>
+                            <div style="font-weight: 500;">{{ case.created_at }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Show/hide recovery amount field
+        const statusSelect = document.getElementById('statusSelect');
+        const recoveryAmountGroup = document.getElementById('recoveryAmountGroup');
+
+        if (statusSelect) {
+            statusSelect.addEventListener('change', function () {
+                if (this.value === 'RECOVERED') {
+                    recoveryAmountGroup.style.display = 'block';
+                    recoveryAmountGroup.querySelector('input').required = true;
+                } else {
+                    recoveryAmountGroup.style.display = 'none';
+                    recoveryAmountGroup.querySelector('input').required = false;
+                }
+            });
+        }
+
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>

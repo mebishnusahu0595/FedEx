@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-logo">
+                    <h1>
+                        <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                    </h1>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">DCA Management Platform</p>
+                </div>
+
+                <div class="auth-title">
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to access your dashboard</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" placeholder="Enter your username"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" placeholder="Enter your password"
+                            required>
+                    </div>
+
+                    <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input">
+                            <span style="font-size: 0.9rem; color: var(--text-secondary);">Remember me</span>
+                        </label>
+                        <a href="#" style="font-size: 0.9rem;">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </form>
+
+                <div
+                    style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--dark-border); text-align: center;">
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">Demo Credentials</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div style="padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <div style="font-weight: 600; color: var(--fedex-orange);">Admin</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">admin / admin123</div>
+                        </div>
+                        <div style="padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <div style="font-weight: 600; color: var(--fedex-purple-light);">DCA</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">recovery_solutions_inc /
+                                dca123</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a href="{{ url_for('index') }}" style="color: var(--text-secondary); font-size: 0.9rem;">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>

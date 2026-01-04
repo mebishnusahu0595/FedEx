@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cases | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">DCA Portal</div>
+                </div>
+                <a href="{{ url_for('dca_dashboard') }}" class="sidebar-link">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('dca_cases') }}" class="sidebar-link active">
+                    <i class="fas fa-folder-open"></i>
+                    <span>My Cases</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" style="background: var(--gradient-orange);">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-role">DCA Agent</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>My Assigned Cases</h1>
+                    <p>View and update your assigned debt recovery cases</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <form method="GET" class="filters-bar">
+                <div class="filter-group">
+                    <span class="filter-label">Status:</span>
+                    <select name="status" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Status</option>
+                        <option value="ASSIGNED" {% if status_filter=='ASSIGNED' %}selected{% endif %}>Assigned</option>
+                        <option value="IN_PROGRESS" {% if status_filter=='IN_PROGRESS' %}selected{% endif %}>In Progress
+                        </option>
+                        <option value="CONTACTED" {% if status_filter=='CONTACTED' %}selected{% endif %}>Contacted
+                        </option>
+                        <option value="PROMISE_TO_PAY" {% if status_filter=='PROMISE_TO_PAY' %}selected{% endif %}>
+                            Promise to Pay</option>
+                        <option value="RECOVERED" {% if status_filter=='RECOVERED' %}selected{% endif %}>Recovered
+                        </option>
+                        <option value="FAILED" {% if status_filter=='FAILED' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">Priority:</span>
+                    <select name="priority" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Priority</option>
+                        <option value="HIGH" {% if priority_filter=='HIGH' %}selected{% endif %}>High</option>
+                        <option value="MEDIUM" {% if priority_filter=='MEDIUM' %}selected{% endif %}>Medium</option>
+                        <option value="LOW" {% if priority_filter=='LOW' %}selected{% endif %}>Low</option>
+                    </select>
+                </div>
+                {% if status_filter or priority_filter %}
+                <a href="{{ url_for('dca_cases') }}" class="btn btn-sm btn-outline">
+                    <i class="fas fa-times"></i> Clear Filters
+                </a>
+                {% endif %}
+            </form>
+
+            <!-- Cases Table -->
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    {% if cases %}
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Case #</th>
+                                    <th>Customer</th>
+                                    <th>Amount</th>
+                                    <th>Overdue</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>SLA Due</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for case in cases %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('dca_view_case', case_id=case.id) }}"
+                                            style="font-weight: 600;">
+                                            {{ case.case_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 500;">{{ case.customer_name or 'N/A' }}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ case.customer_id }}
+                                        </div>
+                                    </td>
+                                    <td style="font-weight: 600; color: var(--fedex-orange);">
+                                        ₹{{ "{:,.0f}".format(case.amount) }}
+                                    </td>
+                                    <td>{{ case.overdue_days }} days</td>
+                                    <td><span class="badge badge-{{ case.priority|lower }}">{{ case.priority }}</span>
+                                    </td>
+                                    <td><span class="badge badge-{{ case.status|lower|replace('_', '-') }}">{{
+                                            case.status }}</span></td>
+                                    <td>
+                                        {% if case.sla_due_date %}
+                                        <span>{{ case.sla_due_date }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('dca_view_case', case_id=case.id) }}"
+                                            class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i> Update
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <h3>No Cases Found</h3>
+                        <p>{% if status_filter or priority_filter %}No cases match your current filters.{% else %}You
+                            don't have any assigned cases yet.{% endif %}</p>
+                        {% if status_filter or priority_filter %}
+                        <a href="{{ url_for('dca_cases') }}" class="btn btn-outline">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>

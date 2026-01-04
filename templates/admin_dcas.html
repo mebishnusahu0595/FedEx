@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCA Agencies | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Main Menu</div>
+                </div>
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_cases') }}" class="sidebar-link">
+                    <i class="fas fa-folder-open"></i>
+                    <span>All Cases</span>
+                </a>
+                <a href="{{ url_for('add_case') }}" class="sidebar-link">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Case</span>
+                </a>
+                <a href="{{ url_for('upload_cases') }}" class="sidebar-link">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload CSV</span>
+                </a>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Management</div>
+                </div>
+                <a href="{{ url_for('admin_dcas') }}" class="sidebar-link active">
+                    <i class="fas fa-building"></i>
+                    <span>DCA Agencies</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>DCA Agencies</h1>
+                    <p>Manage and monitor Debt Collection Agency performance</p>
+                </div>
+                <a href="{{ url_for('admin_add_dca') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Add New DCA
+                </a>
+            </div>
+
+            <!-- DCA Cards Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
+                {% for dca in dcas %}
+                <div class="card" style="position: relative; overflow: visible;">
+                    <!-- Rank Badge -->
+                    <div style="position: absolute; top: -10px; right: 20px; 
+                                width: 40px; height: 40px; border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;
+                                font-weight: 700; font-size: 1rem;
+                                {% if loop.index == 1 %}
+                                background: linear-gradient(135deg, #FFD700, #FFA500);
+                                color: #1a1a2e;
+                                box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+                                {% elif loop.index == 2 %}
+                                background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+                                color: #1a1a2e;
+                                {% elif loop.index == 3 %}
+                                background: linear-gradient(135deg, #CD7F32, #B87333);
+                                color: white;
+                                {% else %}
+                                background: var(--dark-card);
+                                color: var(--text-muted);
+                                {% endif %}">
+                        #{{ loop.index }}
+                    </div>
+
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title" style="margin-bottom: 0.25rem;">{{ dca.name }}</h3>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">
+                                <i class="fas fa-map-marker-alt"></i> {{ dca.region or 'All Regions' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Performance Score -->
+                        <div style="text-align: center; margin-bottom: 1.5rem;">
+                            <div style="font-size: 3rem; font-weight: 800; 
+                                        background: {% if dca.performance_score >= 80 %}var(--gradient-orange){% elif dca.performance_score >= 60 %}var(--gradient-purple){% else %}linear-gradient(135deg, #6B6B8A, #4D4D6A){% endif %};
+                                        -webkit-background-clip: text;
+                                        background-clip: text;
+                                        -webkit-text-fill-color: transparent;">
+                                {{ "{:.1f}".format(dca.performance_score) }}
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">Performance Score</div>
+                            <div class="progress" style="margin-top: 0.75rem; height: 6px;">
+                                <div class="progress-bar {% if dca.performance_score >= 80 %}orange{% elif dca.performance_score >= 60 %}purple{% else %}{% endif %}"
+                                    style="width: {{ dca.performance_score }}%; background: {% if dca.performance_score < 60 %}var(--text-muted){% endif %};">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div
+                                style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm); text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{
+                                    dca.total_cases }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Total Cases</div>
+                            </div>
+                            <div
+                                style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm); text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--status-success);">{{
+                                    dca.recovered_cases }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Recovered</div>
+                            </div>
+                            <div
+                                style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm); text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--fedex-orange);">{{
+                                    dca.active_cases }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Active Cases</div>
+                            </div>
+                            <div
+                                style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm); text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--status-info);">{{
+                                    "{:.1f}".format(dca.sla_compliance_rate) }}%</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">SLA Compliance</div>
+                            </div>
+                        </div>
+
+                        <!-- Recovery Amount -->
+                        <div
+                            style="margin-top: 1.5rem; padding: 1rem; background: rgba(0, 210, 106, 0.1); border-radius: var(--radius-sm); border: 1px solid rgba(0, 210, 106, 0.2);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-secondary);">Total Recovered</span>
+                                <span style="font-size: 1.25rem; font-weight: 700; color: var(--status-success);">
+                                    ₹{{ "{:,.0f}".format(dca.total_recovered_amount) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Recovery Rate -->
+                        {% if dca.total_cases > 0 %}
+                        <div
+                            style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">Recovery Rate</span>
+                            <span
+                                style="font-weight: 600; color: {% if (dca.recovered_cases / dca.total_cases * 100) >= 50 %}var(--status-success){% elif (dca.recovered_cases / dca.total_cases * 100) >= 25 %}var(--status-warning){% else %}var(--status-danger){% endif %};">
+                                {{ "{:.1f}".format(dca.recovered_cases / dca.total_cases * 100) }}%
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Edit Button -->
+                        <div style="margin-top: 1rem;">
+                            <a href="{{ url_for('admin_edit_dca', dca_id=dca.id) }}"
+                                class="btn btn-outline btn-sm w-100">
+                                <i class="fas fa-edit"></i> Edit DCA Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Cases | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Main Menu</div>
+                </div>
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_cases') }}" class="sidebar-link active">
+                    <i class="fas fa-folder-open"></i>
+                    <span>All Cases</span>
+                </a>
+                <a href="{{ url_for('add_case') }}" class="sidebar-link">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Case</span>
+                </a>
+                <a href="{{ url_for('upload_cases') }}" class="sidebar-link">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload CSV</span>
+                </a>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Management</div>
+                </div>
+                <a href="{{ url_for('admin_dcas') }}" class="sidebar-link">
+                    <i class="fas fa-building"></i>
+                    <span>DCA Agencies</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>All Cases</h1>
+                    <p>Manage and track all debt recovery cases</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <a href="{{ url_for('add_case') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Case
+                    </a>
+                    <a href="{{ url_for('upload_cases') }}" class="btn btn-secondary">
+                        <i class="fas fa-upload"></i> Upload CSV
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <form method="GET" class="filters-bar">
+                <div class="filter-group">
+                    <span class="filter-label">Status:</span>
+                    <select name="status" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Status</option>
+                        <option value="NEW" {% if status_filter=='NEW' %}selected{% endif %}>New</option>
+                        <option value="ASSIGNED" {% if status_filter=='ASSIGNED' %}selected{% endif %}>Assigned</option>
+                        <option value="IN_PROGRESS" {% if status_filter=='IN_PROGRESS' %}selected{% endif %}>In Progress
+                        </option>
+                        <option value="CONTACTED" {% if status_filter=='CONTACTED' %}selected{% endif %}>Contacted
+                        </option>
+                        <option value="PROMISE_TO_PAY" {% if status_filter=='PROMISE_TO_PAY' %}selected{% endif %}>
+                            Promise to Pay</option>
+                        <option value="RECOVERED" {% if status_filter=='RECOVERED' %}selected{% endif %}>Recovered
+                        </option>
+                        <option value="FAILED" {% if status_filter=='FAILED' %}selected{% endif %}>Failed</option>
+                        <option value="CLOSED" {% if status_filter=='CLOSED' %}selected{% endif %}>Closed</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">Priority:</span>
+                    <select name="priority" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Priority</option>
+                        <option value="HIGH" {% if priority_filter=='HIGH' %}selected{% endif %}>High</option>
+                        <option value="MEDIUM" {% if priority_filter=='MEDIUM' %}selected{% endif %}>Medium</option>
+                        <option value="LOW" {% if priority_filter=='LOW' %}selected{% endif %}>Low</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">DCA:</span>
+                    <select name="dca" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All DCAs</option>
+                        {% for dca in dcas %}
+                        <option value="{{ dca.id }}" {% if dca_filter==dca.id|string %}selected{% endif %}>{{ dca.name
+                            }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if status_filter or priority_filter or dca_filter %}
+                <a href="{{ url_for('admin_cases') }}" class="btn btn-sm btn-outline">
+                    <i class="fas fa-times"></i> Clear Filters
+                </a>
+                {% endif %}
+            </form>
+
+            <!-- Cases Table -->
+            <div class="card">
+                <div class="card-body" style="padding: 0;">
+                    {% if cases %}
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Case #</th>
+                                    <th>Customer</th>
+                                    <th>Amount</th>
+                                    <th>Overdue</th>
+                                    <th>Priority</th>
+                                    <th>Recovery %</th>
+                                    <th>DCA</th>
+                                    <th>Status</th>
+                                    <th>SLA Due</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for case in cases %}
+                                <tr>
+                                    <td>
+                                        <a href="javascript:void(0)" onclick="openCaseDrawer({{ case.id }})"
+                                            style="font-weight: 600;">
+                                            {{ case.case_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 500;">{{ case.customer_name or 'N/A' }}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ case.customer_id }}
+                                        </div>
+                                    </td>
+                                    <td style="font-weight: 600; color: var(--fedex-orange);">
+                                        ₹{{ case.amount|format_currency }}
+                                    </td>
+                                    <td>{{ case.overdue_days }} days</td>
+                                    <td><span class="badge badge-{{ case.priority|lower }}">{{ case.priority }}</span>
+                                    </td>
+                                    <td>
+                                        <!-- AI Score with Tooltip -->
+                                        <div class="ai-score-container"
+                                            title="🤖 AI Recovery Prediction&#10;&#10;Calculated using:&#10;• Overdue days ({{ case.overdue_days }})&#10;• Amount (₹{{ case.amount|format_currency }})&#10;• Historical recovery patterns&#10;• Regional performance data">
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <div class="progress" style="width: 60px;">
+                                                    <div class="progress-bar {% if case.recovery_probability >= 0.7 %}success{% elif case.recovery_probability >= 0.4 %}orange{% else %}danger{% endif %}"
+                                                        style="width: {{ (case.recovery_probability|float * 100)|to_int }}%;">
+                                                    </div>
+                                                </div>
+                                                <span style="font-size: 0.8rem;">{{ (case.recovery_probability|float *
+                                                    100)|to_int }}%</span>
+                                                <i class="fas fa-robot ai-indicator"
+                                                    style="font-size: 0.7rem; color: var(--fedex-purple); opacity: 0.7;"></i>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ case.dca_name or '<span class="text-muted">Unassigned</span>'|safe }}</td>
+                                    <td><span class="badge badge-{{ case.status|lower|replace('_', '-') }}">{{
+                                            case.status }}</span></td>
+                                    <td>
+                                        {% if case.sla_due_date %}
+                                        {% set today = None %}
+                                        <span class="sla-date" data-sla-date="{{ case.sla_due_date }}">
+                                            {{ case.sla_due_date }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button onclick="openCaseDrawer({{ case.id }})"
+                                            class="btn btn-sm btn-outline view-btn">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <h3>No Cases Found</h3>
+                        <p>{% if status_filter or priority_filter or dca_filter %}No cases match your current filters.{%
+                            else %}Start by adding a new case or uploading a CSV file.{% endif %}</p>
+                        <div style="display: flex; gap: 1rem; justify-content: center;">
+                            <a href="{{ url_for('add_case') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Case
+                            </a>
+                            <a href="{{ url_for('upload_cases') }}" class="btn btn-secondary">
+                                <i class="fas fa-upload"></i> Upload CSV
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Case Detail Drawer/Modal -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeCaseDrawer()"></div>
+    <div class="case-drawer" id="caseDrawer">
+        <div class="drawer-header">
+            <div class="drawer-title">
+                <i class="fas fa-folder-open"></i>
+                <span id="drawerCaseNumber">Loading...</span>
+            </div>
+            <button class="drawer-close" onclick="closeCaseDrawer()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="drawer-content" id="drawerContent">
+            <div class="drawer-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading case details...</span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* AI Score Tooltip Styles */
+        .ai-score-container {
+            cursor: help;
+            position: relative;
+        }
+
+        .ai-score-container:hover .ai-indicator {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* SLA Breach Badge */
+        .sla-breached {
+            background: linear-gradient(135deg, #FF4757, #FF6B7A);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .sla-ok {
+            color: var(--text-secondary);
+        }
+
+        /* Drawer Overlay - NO BLUR, just dim */
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .drawer-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Case Drawer - Wider, better shadow */
+        .case-drawer {
+            position: fixed;
+            top: 0;
+            right: -520px;
+            width: 420px;
+            max-width: 95vw;
+            height: 100vh;
+            background: #1a1a2e;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .case-drawer.active {
+            right: 0;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(135deg, var(--fedex-purple), #5a2d82);
+        }
+
+        .drawer-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .drawer-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .drawer-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .drawer-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .drawer-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-muted);
+            gap: 1rem;
+        }
+
+        .drawer-loading i {
+            font-size: 2rem;
+            color: var(--fedex-purple);
+        }
+
+        /* Drawer Sections */
+        .drawer-section {
+            margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .drawer-section:last-child {
+            border-bottom: none;
+        }
+
+        .drawer-section-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .drawer-section-title i {
+            color: #F97316;
+        }
+
+        /* Info Grid - Better contrast */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .info-item.full-width {
+            grid-column: span 2;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            color: #9CA3AF;
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .info-value.amount {
+            color: #F97316;
+            font-size: 1.25rem;
+        }
+
+        .info-value.success {
+            color: #22C55E;
+        }
+
+        .info-value.danger {
+            color: #EF4444;
+        }
+
+        .info-value.warning {
+            color: #FBBF24;
+        }
+
+        /* AI Insight Box */
+        .ai-insight-box {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .ai-insight-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #A78BFA;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-insight-header i {
+            font-size: 1rem;
+        }
+
+        .ai-insight-text {
+            font-size: 0.9rem;
+            color: #E5E7EB;
+            line-height: 1.5;
+        }
+
+        /* Timeline */
+        .case-timeline {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .case-timeline::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--fedex-purple), var(--fedex-orange));
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1.25rem;
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -1.5rem;
+            top: 0;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--fedex-purple);
+            border: 2px solid var(--bg-card);
+            z-index: 1;
+        }
+
+        .timeline-dot.warning {
+            background: var(--status-warning);
+        }
+
+        .timeline-dot.success {
+            background: var(--status-success);
+        }
+
+        .timeline-dot.danger {
+            background: var(--status-danger);
+        }
+
+        .timeline-content {
+            background: var(--bg-secondary);
+            padding: 0.875rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .timeline-action {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .timeline-notes {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .timeline-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* SLA Info Box */
+        .sla-info-box {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(255, 107, 122, 0.1));
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .sla-info-box.ok {
+            background: linear-gradient(135deg, rgba(0, 210, 106, 0.1), rgba(0, 180, 100, 0.1));
+            border-color: rgba(0, 210, 106, 0.3);
+        }
+
+        .sla-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .sla-status.breached {
+            color: var(--status-danger);
+        }
+
+        .sla-status.ok {
+            color: var(--status-success);
+        }
+
+        /* View button enhancement */
+        .view-btn {
+            transition: all 0.2s;
+        }
+
+        .view-btn:hover {
+            background: var(--fedex-purple);
+            border-color: var(--fedex-purple);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* Drawer actions */
+        .drawer-actions {
+            display: flex;
+            gap: 0.75rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 1rem;
+        }
+    </style>
+
+    <script>
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+
+        // Check SLA breaches on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            document.querySelectorAll('.sla-date').forEach(el => {
+                const slaDate = new Date(el.dataset.slaDate);
+                if (slaDate < today) {
+                    el.innerHTML = `<span class="sla-breached"><i class="fas fa-exclamation-triangle"></i> SLA Breached</span>`;
+                } else {
+                    el.classList.add('sla-ok');
+                }
+            });
+        });
+
+        // Case Drawer Functions
+        function openCaseDrawer(caseId) {
+            document.getElementById('drawerOverlay').classList.add('active');
+            document.getElementById('caseDrawer').classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Load case details
+            loadCaseDetails(caseId);
+        }
+
+        function closeCaseDrawer() {
+            document.getElementById('drawerOverlay').classList.remove('active');
+            document.getElementById('caseDrawer').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close drawer on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeCaseDrawer();
+            }
+        });
+
+        async function loadCaseDetails(caseId) {
+            const content = document.getElementById('drawerContent');
+            const caseNumber = document.getElementById('drawerCaseNumber');
+
+            content.innerHTML = `
+                <div class="drawer-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading case details...</span>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/case/${caseId}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    content.innerHTML = `<div class="alert alert-danger">Error loading case: ${data.error}</div>`;
+                    return;
+                }
+
+                const caseData = data.case;
+                const history = data.history || [];
+
+                caseNumber.textContent = caseData.case_number;
+
+                // Check SLA status
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const slaDate = caseData.sla_due_date ? new Date(caseData.sla_due_date) : null;
+                const isSlaBreach = slaDate && slaDate < today && !['RECOVERED', 'CLOSED', 'WRITTEN_OFF'].includes(caseData.status);
+
+                // Generate AI insight based on case data
+                const recoveryPercent = Math.round(caseData.recovery_probability * 100);
+                let aiInsight = '';
+                if (caseData.overdue_days > 90 && recoveryPercent < 50) {
+                    aiInsight = 'High overdue duration with low recovery probability. Recommend senior DCA follow-up or escalation.';
+                } else if (caseData.overdue_days > 60 && recoveryPercent >= 50) {
+                    aiInsight = 'Moderate risk case. Consistent follow-up recommended to secure recovery commitment.';
+                } else if (recoveryPercent >= 70) {
+                    aiInsight = 'High recovery potential. Standard collection process likely to succeed.';
+                } else if (caseData.amount > 50000) {
+                    aiInsight = 'High-value case requires priority handling. Consider dedicated recovery specialist.';
+                } else {
+                    aiInsight = 'Standard case profile. Follow regular collection workflow.';
+                }
+
+                content.innerHTML = `
+                    <!-- Status Badges -->
+                    <div class="drawer-section" style="border-bottom: none; padding-bottom: 0.5rem;">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <span class="badge badge-${caseData.priority.toLowerCase()}" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">${caseData.priority}</span>
+                            <span class="badge badge-${caseData.status.toLowerCase().replace('_', '-')}" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">${caseData.status.replace('_', ' ')}</span>
+                            ${isSlaBreach ? '<span class="sla-breached" style="padding: 0.4rem 0.75rem;"><i class="fas fa-exclamation-triangle"></i> SLA BREACH</span>' : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- AI Insight Box -->
+                    <div class="ai-insight-box">
+                        <div class="ai-insight-header">
+                            <i class="fas fa-robot"></i> AI Insight
+                        </div>
+                        <div class="ai-insight-text">"${aiInsight}"</div>
+                    </div>
+                    
+                    <!-- Key Metrics -->
+                    <div class="drawer-section">
+                        <div class="drawer-section-title"><i class="fas fa-chart-bar"></i> Key Metrics</div>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">Amount</div>
+                                <div class="info-value amount">₹${Number(caseData.amount).toLocaleString('en-IN')}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Overdue</div>
+                                <div class="info-value ${caseData.overdue_days > 90 ? 'danger' : caseData.overdue_days > 60 ? 'warning' : ''}">${caseData.overdue_days} days</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Recovery Score</div>
+                                <div class="info-value ${recoveryPercent >= 70 ? 'success' : recoveryPercent >= 40 ? 'warning' : 'danger'}">${recoveryPercent}%</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Recovered</div>
+                                <div class="info-value ${caseData.recovery_amount > 0 ? 'success' : ''}">₹${Number(caseData.recovery_amount || 0).toLocaleString('en-IN')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer & DCA -->
+                    <div class="drawer-section">
+                        <div class="drawer-section-title"><i class="fas fa-user-tie"></i> Assignment</div>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">Customer</div>
+                                <div class="info-value">${caseData.customer_name || caseData.customer_id}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Region</div>
+                                <div class="info-value">${caseData.region || 'N/A'}</div>
+                            </div>
+                            <div class="info-item full-width">
+                                <div class="info-label">Assigned DCA</div>
+                                <div class="info-value" style="color: ${caseData.dca_name ? '#22C55E' : '#FBBF24'};">${caseData.dca_name || '⚠ Unassigned'}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- SLA Status -->
+                        <div class="sla-info-box ${isSlaBreach ? '' : 'ok'}" style="margin-top: 0.75rem;">
+                            <div class="sla-status ${isSlaBreach ? 'breached' : 'ok'}">
+                                <i class="fas fa-${isSlaBreach ? 'exclamation-circle' : 'check-circle'}"></i>
+                                ${isSlaBreach ? 'SLA Breached' : 'SLA On Track'}
+                            </div>
+                            <div style="font-size: 0.8rem; color: #9CA3AF; margin-top: 0.5rem;">
+                                Due: ${caseData.sla_due_date || 'Not set'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline (Simplified) -->
+                    <div class="drawer-section">
+                        <div class="drawer-section-title"><i class="fas fa-stream"></i> Timeline</div>
+                        <div class="case-timeline">
+                            ${history.length > 0 ? history.slice(0, 5).map(h => `
+                                <div class="timeline-item">
+                                    <div class="timeline-dot ${h.action === 'ESCALATED' ? 'danger' : h.action === 'RECOVERED' ? 'success' : h.action === 'CONTACTED' ? 'warning' : ''}"></div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-action">${h.action.replace('_', ' ')}</div>
+                                        ${h.notes ? `<div class="timeline-notes">${h.notes}</div>` : ''}
+                                        <div class="timeline-time">${h.created_at || ''}</div>
+                                    </div>
+                                </div>
+                            `).join('') : `
+                                <div class="timeline-item">
+                                    <div class="timeline-dot success"></div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-action">Case Created</div>
+                                        <div class="timeline-time">${caseData.created_at || 'Recently'}</div>
+                                    </div>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="drawer-actions">
+                        ${!caseData.dca_id ? `
+                            <a href="/admin/case/${caseData.id}" class="btn btn-primary" style="flex: 2;">
+                                <i class="fas fa-user-plus"></i> Assign DCA
+                            </a>
+                        ` : `
+                            <a href="/admin/case/${caseData.id}" class="btn btn-primary" style="flex: 2;">
+                                <i class="fas fa-exchange-alt"></i> Reassign DCA
+                            </a>
+                        `}
+                        <a href="/admin/case/${caseData.id}" class="btn btn-secondary" style="flex: 1;">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <button onclick="closeCaseDrawer()" class="btn btn-outline" style="width: 44px; padding: 0;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+
+            } catch (error) {
+                content.innerHTML = `<div class="alert alert-danger">Error loading case details. Please try again.</div>`;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+
+</html>

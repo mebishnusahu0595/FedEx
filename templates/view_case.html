@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case {{ case.case_number }} | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Main Menu</div>
+                </div>
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_cases') }}" class="sidebar-link active">
+                    <i class="fas fa-folder-open"></i>
+                    <span>All Cases</span>
+                </a>
+                <a href="{{ url_for('add_case') }}" class="sidebar-link">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Case</span>
+                </a>
+                <a href="{{ url_for('upload_cases') }}" class="sidebar-link">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload CSV</span>
+                </a>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Management</div>
+                </div>
+                <a href="{{ url_for('admin_dcas') }}" class="sidebar-link">
+                    <i class="fas fa-building"></i>
+                    <span>DCA Agencies</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Case Details</h1>
+                    <p>View and manage case information</p>
+                </div>
+                <a href="{{ url_for('admin_cases') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to Cases
+                </a>
+            </div>
+
+            <!-- Case Header -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="case-header">
+                        <div>
+                            <div class="case-number">{{ case.case_number }}</div>
+                            <div class="case-customer">{{ case.customer_name or case.customer_id }}</div>
+                            <div style="display: flex; gap: 0.75rem; margin-top: 0.75rem;">
+                                <span class="badge badge-{{ case.priority|lower }}">{{ case.priority }} Priority</span>
+                                <span class="badge badge-{{ case.status|lower|replace('_', '-') }}">{{ case.status
+                                    }}</span>
+                            </div>
+                        </div>
+                        <div class="case-meta">
+                            <div class="case-meta-item">
+                                <span class="case-meta-label">Amount</span>
+                                <span class="case-meta-value amount">₹{{ "{:,.0f}".format(case.amount) }}</span>
+                            </div>
+                            <div class="case-meta-item">
+                                <span class="case-meta-label">Overdue</span>
+                                <span class="case-meta-value">{{ case.overdue_days }} days</span>
+                            </div>
+                            <div class="case-meta-item">
+                                <span class="case-meta-label">Recovery Prob.</span>
+                                <span class="case-meta-value probability">{{ (case.recovery_probability * 100)|int
+                                    }}%</span>
+                            </div>
+                            {% if case.recovery_amount %}
+                            <div class="case-meta-item">
+                                <span class="case-meta-label">Recovered</span>
+                                <span class="case-meta-value" style="color: var(--status-success);">₹{{
+                                    "{:,.0f}".format(case.recovery_amount) }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <!-- Case Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-info-circle"></i> Case Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; gap: 1rem;">
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                <span style="color: var(--text-muted);">Customer ID</span>
+                                <span style="font-weight: 500;">{{ case.customer_id }}</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                <span style="color: var(--text-muted);">Invoice Number</span>
+                                <span style="font-weight: 500;">{{ case.invoice_number or 'N/A' }}</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                <span style="color: var(--text-muted);">Region</span>
+                                <span style="font-weight: 500;">{{ case.region or 'N/A' }}</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                <span style="color: var(--text-muted);">Assigned DCA</span>
+                                <span style="font-weight: 500; color: var(--fedex-orange);">{{ case.dca_name or
+                                    'Unassigned' }}</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                <span style="color: var(--text-muted);">SLA Due Date</span>
+                                <span style="font-weight: 500;">{{ case.sla_due_date or 'Not Set' }}</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                <span style="color: var(--text-muted);">Created</span>
+                                <span style="font-weight: 500;">{{ case.created_at }}</span>
+                            </div>
+                        </div>
+
+                        {% if case.notes %}
+                        <div style="margin-top: 1.5rem;">
+                            <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--text-muted);">Notes</h4>
+                            <div style="padding: 1rem; background: var(--dark-card); border-radius: var(--radius-sm);">
+                                {{ case.notes }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Assign/Reassign DCA -->
+                        {% if case.status not in ['RECOVERED', 'CLOSED', 'WRITTEN_OFF'] %}
+                        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--dark-border);">
+                            <h4 style="margin-bottom: 1rem;"><i class="fas fa-user-plus"></i> {{ 'Reassign' if
+                                case.dca_id else 'Assign' }} DCA</h4>
+                            <form method="POST" action="{{ url_for('assign_case', case_id=case.id) }}"
+                                style="display: flex; gap: 1rem;">
+                                <select name="dca_id" class="form-control" required>
+                                    <option value="">Select DCA</option>
+                                    {% for dca in dcas %}
+                                    <option value="{{ dca.id }}" {% if dca.id==case.dca_id %}selected{% endif %}>
+                                        {{ dca.name }} (Score: {{ "{:.1f}".format(dca.performance_score) }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check"></i> Assign
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Case History / Audit Trail -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-history"></i> Case History</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if history %}
+                        <div class="timeline">
+                            {% for log in history %}
+                            <div
+                                class="timeline-item {% if log.action == 'STATUS_UPDATE' and log.new_status == 'RECOVERED' %}success{% elif log.action == 'ESCALATED' %}danger{% elif log.action == 'ASSIGNED' %}warning{% endif %}">
+                                <div class="timeline-date">{{ log.created_at }}</div>
+                                <div class="timeline-title">
+                                    {{ log.action.replace('_', ' ').title() }}
+                                    {% if log.username %}
+                                    <span style="color: var(--text-muted); font-weight: 400;"> by {{ log.username
+                                        }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="timeline-text">
+                                    {% if log.old_status and log.new_status %}
+                                    Status: {{ log.old_status }} → <strong>{{ log.new_status }}</strong>
+                                    {% endif %}
+                                    {% if log.amount %}
+                                    <br>Amount: ₹{{ "{:,.0f}".format(log.amount) }}
+                                    {% endif %}
+                                    {% if log.notes %}
+                                    <br>{{ log.notes }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state" style="padding: 2rem;">
+                            <div class="empty-state-icon" style="font-size: 2rem;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <p>No history recorded yet</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>

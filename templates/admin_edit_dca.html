@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit DCA Agency | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Main Menu</div>
+                </div>
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_cases') }}" class="sidebar-link">
+                    <i class="fas fa-folder-open"></i>
+                    <span>All Cases</span>
+                </a>
+                <a href="{{ url_for('add_case') }}" class="sidebar-link">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Case</span>
+                </a>
+                <a href="{{ url_for('upload_cases') }}" class="sidebar-link">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload CSV</span>
+                </a>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Management</div>
+                </div>
+                <a href="{{ url_for('admin_dcas') }}" class="sidebar-link active">
+                    <i class="fas fa-building"></i>
+                    <span>DCA Agencies</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1><i class="fas fa-edit"></i> Edit DCA Agency</h1>
+                    <p>Update agency details and credentials for {{ dca.name }}</p>
+                </div>
+                <a href="{{ url_for('admin_dcas') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to DCAs
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-building"></i> Agency Details</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin_edit_dca', dca_id=dca.id) }}">
+                        <!-- Agency Info Section -->
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="color: var(--fedex-orange); margin-bottom: 1rem;">
+                                <i class="fas fa-info-circle"></i> Agency Information
+                            </h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="name">Agency Name *</label>
+                                    <input type="text" id="name" name="name" class="form-input" value="{{ dca.name }}"
+                                        required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="region">Operating Region</label>
+                                    <select id="region" name="region" class="form-input">
+                                        <option value="" {% if not dca.region %}selected{% endif %}>All Regions</option>
+                                        <option value="North" {% if dca.region=='North' %}selected{% endif %}>North
+                                        </option>
+                                        <option value="South" {% if dca.region=='South' %}selected{% endif %}>South
+                                        </option>
+                                        <option value="East" {% if dca.region=='East' %}selected{% endif %}>East
+                                        </option>
+                                        <option value="West" {% if dca.region=='West' %}selected{% endif %}>West
+                                        </option>
+                                        <option value="Central" {% if dca.region=='Central' %}selected{% endif %}>
+                                            Central</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="contact_email">Contact Email</label>
+                                    <input type="email" id="contact_email" name="contact_email" class="form-input"
+                                        value="{{ user.email if user else '' }}" placeholder="agency@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact_phone">Contact Phone</label>
+                                    <input type="tel" id="contact_phone" name="contact_phone" class="form-input"
+                                        placeholder="+91 98765 43210">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Stats (Read Only) -->
+                        <div
+                            style="margin-bottom: 2rem; padding: 1.5rem; background: var(--dark-card); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <h4 style="margin-bottom: 1rem;">
+                                <i class="fas fa-chart-line"></i> Performance Statistics
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                <div
+                                    style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--fedex-orange);">{{
+                                        "{:.1f}".format(dca.performance_score) }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Performance Score</div>
+                                </div>
+                                <div
+                                    style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{
+                                        dca.total_cases }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Total Cases</div>
+                                </div>
+                                <div
+                                    style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--status-success);">{{
+                                        dca.recovered_cases }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Recovered</div>
+                                </div>
+                                <div
+                                    style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-sm);">
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--status-success);">₹{{
+                                        "{:,.0f}".format(dca.total_recovered_amount) }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Amount Recovered</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Login Credentials Section -->
+                        {% if user %}
+                        <div
+                            style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(139, 92, 246, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(139, 92, 246, 0.3);">
+                            <h4 style="color: var(--fedex-purple-light); margin-bottom: 1rem;">
+                                <i class="fas fa-key"></i> Portal Login Credentials
+                            </h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Username (Cannot be changed)</label>
+                                    <input type="text" class="form-input" value="{{ user.username }}" disabled
+                                        style="background: var(--bg-secondary); opacity: 0.7;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_password">New Password (Leave blank to keep current)</label>
+                                    <div style="position: relative;">
+                                        <input type="password" id="new_password" name="new_password" class="form-input"
+                                            placeholder="Enter new password (min 6 chars)" minlength="6">
+                                        <button type="button" onclick="togglePassword()"
+                                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
+                                            <i class="fas fa-eye" id="toggleIcon"></i>
+                                        </button>
+                                    </div>
+                                    <small style="color: var(--text-muted);">Leave blank to keep existing
+                                        password</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div
+                            style="margin-bottom: 2rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);">
+                            <p style="color: var(--status-danger); margin: 0;">
+                                <i class="fas fa-exclamation-triangle"></i> No user account linked to this DCA. Create
+                                one from Add DCA page.
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button type="submit" class="btn btn-primary" style="flex: 2;">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('admin_dcas') }}" class="btn btn-outline" style="flex: 1;">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="card" style="margin-top: 2rem; border-color: rgba(239, 68, 68, 0.3);">
+                <div class="card-header" style="background: rgba(239, 68, 68, 0.1);">
+                    <h3 class="card-title" style="color: var(--status-danger);">
+                        <i class="fas fa-exclamation-triangle"></i> Danger Zone
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                        Deleting this DCA will remove all associated data. This action cannot be undone.
+                        DCAs with active cases cannot be deleted.
+                    </p>
+                    <form method="POST" action="{{ url_for('admin_delete_dca', dca_id=dca.id) }}"
+                        onsubmit="return confirm('Are you sure you want to delete {{ dca.name }}? This action cannot be undone.');">
+                        <button type="submit" class="btn"
+                            style="background: linear-gradient(135deg, #EF4444, #DC2626); color: white;">
+                            <i class="fas fa-trash-alt"></i> Delete DCA Agency
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('new_password');
+            const toggleIcon = document.getElementById('toggleIcon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>

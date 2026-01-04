@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FedEx DCA Management Platform - Centralized, AI-assisted Debt Collection Agency Management System">
+    <title>FedEx DCA Platform | AI-Powered Recovery Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="landing-page">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <a href="/" class="navbar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                    <span class="brand-dca">DCA Platform</span>
+                </a>
+                <div class="navbar-nav">
+                    <a href="{{ url_for('login') }}" class="btn btn-outline">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-floating">
+                <div class="floating-shape"></div>
+                <div class="floating-shape"></div>
+                <div class="floating-shape"></div>
+            </div>
+            
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-robot"></i>
+                    <span>AI-Powered Recovery Management</span>
+                </div>
+                
+                <h1 class="hero-title">
+                    Centralized DCA Management for Smarter Recovery
+                </h1>
+                
+                <p class="hero-subtitle">
+                    Automate case allocation, track recovery in real-time, enforce SLAs, 
+                    and gain complete visibility into your debt collection operations.
+                </p>
+                
+                <div class="hero-buttons">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-arrow-right"></i> Get Started
+                    </a>
+                    <a href="#features" class="btn btn-outline btn-lg">
+                        <i class="fas fa-play-circle"></i> Learn More
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features-section">
+            <div class="section-title">
+                <h2>Why Choose Our Platform?</h2>
+                <p>Replace Excel + Email + Manual follow-ups with a single intelligent system</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h4>AI Case Prioritization</h4>
+                    <p>Automatically prioritize cases using machine learning, focusing on high-value recoveries first.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h4>Smart DCA Allocation</h4>
+                    <p>Assign cases to the best-performing agencies based on region, expertise, and track record.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h4>SLA Enforcement</h4>
+                    <p>Automated SLA tracking with escalation alerts to ensure timely case resolution.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4>Real-Time Dashboard</h4>
+                    <p>Live visibility into recovery metrics, aging buckets, and DCA performance rankings.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h4>Complete Audit Trail</h4>
+                    <p>Every action logged for compliance, transparency, and performance analysis.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-upload"></i>
+                    </div>
+                    <h4>Bulk CSV Upload</h4>
+                    <p>Import hundreds of cases at once with automatic AI processing and allocation.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section style="padding: 4rem 2rem; text-align: center;">
+            <div style="max-width: 1000px; margin: 0 auto;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+                    <div>
+                        <div style="font-size: 3rem; font-weight: 800; color: var(--fedex-orange);">78%</div>
+                        <div style="color: var(--text-secondary);">Faster Case Resolution</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 3rem; font-weight: 800; color: var(--fedex-purple-light);">35%</div>
+                        <div style="color: var(--text-secondary);">Higher Recovery Rate</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 3rem; font-weight: 800; color: var(--status-success);">100%</div>
+                        <div style="color: var(--text-secondary);">SLA Visibility</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 3rem; font-weight: 800; color: var(--status-info);">24/7</div>
+                        <div style="color: var(--text-secondary);">Real-Time Monitoring</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer style="padding: 2rem; text-align: center; border-top: 1px solid var(--dark-border); background: var(--dark-surface);">
+            <p style="color: var(--text-muted);">
+                © 2024 FedEx DCA Management Platform | Built for Hackathon
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

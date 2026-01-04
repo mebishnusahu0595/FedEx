@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Case | FedEx DCA Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="brand-fed">Fed</span><span class="brand-ex">Ex</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Main Menu</div>
+                </div>
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_cases') }}" class="sidebar-link">
+                    <i class="fas fa-folder-open"></i>
+                    <span>All Cases</span>
+                </a>
+                <a href="{{ url_for('add_case') }}" class="sidebar-link active">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Add Case</span>
+                </a>
+                <a href="{{ url_for('upload_cases') }}" class="sidebar-link">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload CSV</span>
+                </a>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Management</div>
+                </div>
+                <a href="{{ url_for('admin_dcas') }}" class="sidebar-link">
+                    <i class="fas fa-building"></i>
+                    <span>DCA Agencies</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm w-100 mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Add New Case</h1>
+                    <p>Create a new debt recovery case with AI-powered prioritization</p>
+                </div>
+                <a href="{{ url_for('admin_cases') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to Cases
+                </a>
+            </div>
+
+            <div class="card" style="max-width: 800px;">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-file-invoice-dollar"></i> Case Details</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('add_case') }}">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Customer ID *</label>
+                                <input type="text" name="customer_id" class="form-control" placeholder="e.g., CUST-1001"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Customer Name</label>
+                                <input type="text" name="customer_name" class="form-control"
+                                    placeholder="Customer full name">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Invoice Number</label>
+                                <input type="text" name="invoice_number" class="form-control"
+                                    placeholder="e.g., INV-2024001">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Region</label>
+                                <select name="region" class="form-control">
+                                    <option value="">Select Region</option>
+                                    <option value="North">North</option>
+                                    <option value="South">South</option>
+                                    <option value="East">East</option>
+                                    <option value="West">West</option>
+                                    <option value="Central">Central</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Outstanding Amount (₹) *</label>
+                                <input type="number" name="amount" class="form-control" placeholder="e.g., 50000"
+                                    min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Overdue Days *</label>
+                                <input type="number" name="overdue_days" class="form-control" placeholder="e.g., 45"
+                                    min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control"
+                                placeholder="Additional notes about this case..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-check">
+                                <input type="checkbox" name="auto_assign" class="form-check-input" checked>
+                                <span style="margin-left: 0.5rem;">
+                                    <strong>Auto-assign to Best DCA</strong>
+                                    <br>
+                                    <span style="font-size: 0.85rem; color: var(--text-muted);">
+                                        AI will automatically select the best performing DCA based on region and case
+                                        priority
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div
+                            style="background: var(--dark-card); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
+                            <h4 style="margin-bottom: 1rem; color: var(--fedex-orange);">
+                                <i class="fas fa-brain"></i> AI Analysis Preview
+                            </h4>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                When you submit this case, our AI will automatically:
+                            </p>
+                            <ul
+                                style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 1.5rem; margin-top: 0.5rem;">
+                                <li>Calculate <strong>Priority Level</strong> (HIGH/MEDIUM/LOW) based on amount &
+                                    overdue days</li>
+                                <li>Predict <strong>Recovery Probability</strong> using machine learning</li>
+                                <li>Select <strong>Best DCA</strong> based on performance score and region match</li>
+                                <li>Set <strong>SLA Due Date</strong> (7 days for HIGH, 14 days for others)</li>
+                            </ul>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Create Case
+                            </button>
+                            <a href="{{ url_for('admin_cases') }}" class="btn btn-outline">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Auto-hide flash messages
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(100%)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+
+</html>
