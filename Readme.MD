@@ -17,7 +17,15 @@ This repository contains:
 > This README provides detailed technical documentation for reference.
 
 ---
+## 🎥 Demo Video
 
+Check out the platform in action:
+
+[Watch the Demo Video](VN20260105_100551.mp4)
+
+*(Note: If the video doesn't play, you can find it in the root directory as `VN20260105_100551.mp4`)*
+
+---
 ## �📌 The Problem We're Solving
 
 FedEx currently manages thousands of overdue customer accounts through external Debt Collection Agencies. But here's the catch — the entire process runs on spreadsheets, emails, and endless follow-ups. As the volume grows, so do the problems:
