@@ -21,7 +21,9 @@ This repository contains:
 
 Check out the platform in action:
 
-[Watch the Demo Video](VN20260105_100551.mp4)
+<video src="VN20260105_100551.mp4" controls="controls" style="max-width: 100%;">
+  Your browser does not support the video tag.
+</video>
 
 *(Note: If the video doesn't play, you can find it in the root directory as `VN20260105_100551.mp4`)*
 
